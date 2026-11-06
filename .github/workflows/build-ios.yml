@@ -1,0 +1,38 @@
+name: Build C Engine for iOS
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build-ios:
+    runs-on: macos-latest # Usa a máquina virtual macOS mais recente com o Xcode instalado
+
+    steps:
+      - name: Clonar repositório
+        uses: actions/checkout@v4
+
+      - name: Configurar o CMake e gerar projeto Xcode
+        run: |
+          cmake -B build -G "Xcode" \
+            -DCMAKE_SYSTEM_NAME=iOS \
+            -DCMAKE_OSX_DEPLOYMENT_TARGET=14.0 \
+            -DCMAKE_OSX_ARCHITECTURES=arm64
+
+      - name: Compilar o motor (Release)
+        run: cmake --build build --config Release
+
+      - name: Organizar artefatos compilados
+        run: |
+          mkdir -p output
+          # Copie o arquivo gerado (.a ou .framework) para a pasta de saída
+          # O caminho exato depende de como seu CMakeLists.txt nomeia a biblioteca (ex: libbt3.a)
+          find build -name "*.a" -exec cp {} output/ \;
+
+      - name: Salvar artefatos no GitHub
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-engine-binaries
+          path: output/
